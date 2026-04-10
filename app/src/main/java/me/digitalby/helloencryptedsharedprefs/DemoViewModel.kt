@@ -42,12 +42,12 @@ class DemoViewModel(application: Application) : AndroidViewModel(application) {
                     store.clear()
                     _initError.value = "Encryption keys were invalidated. Stored data has been cleared."
                 }
+                _isLoading.value = false
                 store.allKeys().collect { keys ->
                     _storedKeys.value = keys
                 }
             } catch (e: Exception) {
                 _initError.value = e.message ?: "Keystore initialization failed"
-            } finally {
                 _isLoading.value = false
             }
         }
