@@ -14,7 +14,7 @@ import me.digitalby.helloencryptedsharedprefs.crypto.SecurityLevel
 class DemoViewModel(application: Application) : AndroidViewModel(application) {
 
     private val keyStoreManager = KeyStoreManager(application)
-    private val encryptedDataStore = EncryptedDataStore(application, keyStoreManager.getAead())
+    private var encryptedDataStore: EncryptedDataStore? = null
 
     private val _securityLevel = MutableStateFlow<SecurityLevel?>(null)
     val securityLevel: StateFlow<SecurityLevel?> = _securityLevel
@@ -25,39 +25,53 @@ class DemoViewModel(application: Application) : AndroidViewModel(application) {
     private val _storedKeys = MutableStateFlow<Set<String>>(emptySet())
     val storedKeys: StateFlow<Set<String>> = _storedKeys
 
-    private val _isLoading = MutableStateFlow(false)
+    private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _initError = MutableStateFlow<String?>(null)
+    val initError: StateFlow<String?> = _initError
+
     init {
-        _securityLevel.value = keyStoreManager.securityLevel
         viewModelScope.launch {
-            encryptedDataStore.allKeys().collect { keys ->
-                _storedKeys.value = keys
+            try {
+                keyStoreManager.initialize()
+                encryptedDataStore = EncryptedDataStore(application, keyStoreManager.getAead())
+                _securityLevel.value = keyStoreManager.securityLevel
+                encryptedDataStore!!.allKeys().collect { keys ->
+                    _storedKeys.value = keys
+                }
+            } catch (e: Exception) {
+                _initError.value = e.message ?: "Keystore initialization failed"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
     fun write(key: String, value: String) {
+        val store = encryptedDataStore ?: return
         viewModelScope.launch {
             _isLoading.value = true
-            encryptedDataStore.write(key, value)
+            store.write(key, value)
             _readResult.value = value
             _isLoading.value = false
         }
     }
 
     fun read(key: String) {
+        val store = encryptedDataStore ?: return
         viewModelScope.launch {
             _isLoading.value = true
-            _readResult.value = encryptedDataStore.read(key).firstOrNull() ?: "(not found)"
+            _readResult.value = store.read(key).firstOrNull() ?: "(not found)"
             _isLoading.value = false
         }
     }
 
     fun delete(key: String) {
+        val store = encryptedDataStore ?: return
         viewModelScope.launch {
             _isLoading.value = true
-            encryptedDataStore.delete(key)
+            store.delete(key)
             _readResult.value = null
             _isLoading.value = false
         }

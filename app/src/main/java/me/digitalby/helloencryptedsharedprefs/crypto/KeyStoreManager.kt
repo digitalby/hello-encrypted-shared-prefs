@@ -8,6 +8,8 @@ import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeyTemplates
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.security.KeyStore
 import javax.crypto.KeyGenerator
 
@@ -23,10 +25,12 @@ class KeyStoreManager(private val context: Context) {
     var securityLevel: SecurityLevel = SecurityLevel.SOFTWARE
         private set
 
-    init {
-        AeadConfig.register()
-        ensureAndroidKeyStoreKey()
-        securityLevel = SecurityLevelDetector.detectSecurityLevel(KEYSTORE_ALIAS)
+    suspend fun initialize() {
+        withContext(Dispatchers.Default) {
+            AeadConfig.register()
+            ensureAndroidKeyStoreKey()
+            securityLevel = SecurityLevelDetector.detectSecurityLevel(KEYSTORE_ALIAS)
+        }
     }
 
     fun getAead(): Aead {
