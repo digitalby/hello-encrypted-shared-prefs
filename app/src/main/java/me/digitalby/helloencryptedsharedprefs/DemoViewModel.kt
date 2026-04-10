@@ -35,9 +35,14 @@ class DemoViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 keyStoreManager.initialize()
-                encryptedDataStore = EncryptedDataStore(application, keyStoreManager.getAead())
+                val store = EncryptedDataStore(application, keyStoreManager.getAead())
+                encryptedDataStore = store
                 _securityLevel.value = keyStoreManager.securityLevel
-                encryptedDataStore!!.allKeys().collect { keys ->
+                if (keyStoreManager.didResetKeys) {
+                    store.clear()
+                    _initError.value = "Encryption keys were invalidated. Stored data has been cleared."
+                }
+                store.allKeys().collect { keys ->
                     _storedKeys.value = keys
                 }
             } catch (e: Exception) {
