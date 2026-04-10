@@ -38,6 +38,7 @@ fun DemoScreen(viewModel: DemoViewModel, modifier: Modifier = Modifier) {
     val readResult by viewModel.readResult.collectAsState()
     val storedKeys by viewModel.storedKeys.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val initError by viewModel.initError.collectAsState()
 
     var key by remember { mutableStateOf("") }
     var value by remember { mutableStateOf("") }
@@ -59,6 +60,29 @@ fun DemoScreen(viewModel: DemoViewModel, modifier: Modifier = Modifier) {
             )
 
             SecurityLevelCard(securityLevel)
+
+            initError?.let { error ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Keystore Error",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
 
             OutlinedTextField(
                 value = key,
